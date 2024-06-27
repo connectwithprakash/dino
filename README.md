@@ -1,5 +1,20 @@
 :new: *Please check out our more recent [DINOv2](https://github.com/facebookresearch/dinov2) effort in the same line of work.*
 
+## Training the dino on custom data
+
+To train a DINO model on the curated dataset, use the following command:
+
+```bash
+python -m torch.distributed.launch --nproc_per_node=<NUM_GPUS> src.dino.train_dino.py \
+  --arch <ARCHITECTURE> \
+  --data_path <DATASET_PATH> \
+  --output_dir <OUTPUT_DIR> \
+  --epochs <NUM_EPOCHS> \
+  --batch_size_per_gpu <BATCH_SIZE_PER_GPU> \
+  --num_workers <NUM_WORKERS> \
+  --use_wandb <USE_WANDB>
+```
+
 # Self-Supervised Vision Transformers with DINO
 
 PyTorch implementation and pretrained models for DINO. For details, see **Emerging Properties in Self-Supervised Vision Transformers**.  
