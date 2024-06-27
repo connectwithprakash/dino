@@ -32,7 +32,14 @@ from torch import nn
 import torch.distributed as dist
 from PIL import ImageFilter, ImageOps
 
+try:
+    import wandb
 
+    assert hasattr(wandb, '__version__')  # verify package import not local dir
+except (ImportError, AssertionError):
+    wandb = None
+
+    
 class GaussianBlur(object):
     """
     Apply Gaussian Blur to the PIL image.
@@ -311,9 +318,14 @@ def reduce_dict(input_dict, average=True):
 
 
 class MetricLogger(object):
-    def __init__(self, delimiter="\t"):
+    def __init__(self, args, delimiter="\t", wandb_run=None):
         self.meters = defaultdict(SmoothedValue)
         self.delimiter = delimiter
+        if is_main_process():
+            self.wandb_run = wandb_run
+        else:
+            self.wandb_run = None
+        
 
     def update(self, **kwargs):
         for k, v in kwargs.items():
@@ -321,6 +333,8 @@ class MetricLogger(object):
                 v = v.item()
             assert isinstance(v, (float, int))
             self.meters[k].update(v)
+            if is_main_process() and self.wandb_run:
+                wandb.log({k:v})
 
     def __getattr__(self, attr):
         if attr in self.meters:
@@ -474,7 +488,7 @@ def init_distributed_mode(args):
     elif 'SLURM_PROCID' in os.environ:
         args.rank = int(os.environ['SLURM_PROCID'])
         args.gpu = args.rank % torch.cuda.device_count()
-    # launched naively with `python main_dino.py`
+    # launched naively with `python train_dino.py`
     # we manually add MASTER_ADDR and MASTER_PORT to env variables
     elif torch.cuda.is_available():
         print('Will run the code on one GPU.')
